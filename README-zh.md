@@ -1,13 +1,22 @@
 # LiveTV
-将 Youtube 直播作为 IPTV 电视源
 
-## 安装方法
+将 Youtube 直播作为 IPTV 源
+这个项目分支于[livetv](https://github.com/NatoriMisong/livetv)
 
-首先你需要安裝Docker，Centos7用家可以直接使用參考這篇教學文檔：[How To Install and Use Docker on CentOS 7](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-centos-7)
+感谢 @zjyl1994
 
-安裝好Docker后，只需要使用以下命令即可在本地的9500連接埠啓用LiveTV!
 
-`docker run -d -p9500:9000 zjyl1994/livetv:1.0`
+## 构建
+
+首先你需要安装Docker
+
+clone 本存储库，执行
+`docker build -t livetv .`
+
+构建好容器镜像后，只需要使用以下命令即可在本地的9500端口访问LiveTV!
+
+`docker run -d -p9500:9000 livetv`
+
 
 資料檔存儲于容器内的 `/root/data` 目錄中，所以建議使用-v指令將這個目錄映射到宿主機的目錄。
 

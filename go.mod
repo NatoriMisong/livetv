@@ -1,4 +1,4 @@
-module github.com/zjyl1994/livetv
+module github.com/NatoriMisong/livetv
 
 go 1.13
 

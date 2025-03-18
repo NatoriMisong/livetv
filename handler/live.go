@@ -9,9 +9,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
-	"github.com/zjyl1994/livetv/global"
-	"github.com/zjyl1994/livetv/service"
-	"github.com/zjyl1994/livetv/util"
+	"github.com/NatoriMisong/livetv/global"
+	"github.com/NatoriMisong/livetv/service"
+	"github.com/NatoriMisong/livetv/util"
 )
 
 func M3UHandler(c *gin.Context) {
