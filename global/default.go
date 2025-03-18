@@ -9,7 +9,7 @@ import (
 
 var defaultConfigValue = map[string]string{
 	"ytdl_cmd":  "youtube-dl",
-	"ytdl_args": "-f best -g {url}",
+	"ytdl_args": "-S "res:720,fps" -g {url}" --cookies /root/data/cookies.txt,
 	"base_url":  "http://127.0.0.1:9000",
 	"password":  "password",
 }
