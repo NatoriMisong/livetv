@@ -2,7 +2,7 @@ FROM golang:alpine AS builder
 RUN apk update && apk --no-cache add build-base
 WORKDIR /go/src/github.com/NatoriMisong/livetv/
 COPY . . 
-RUN GOPROXY="https://goproxy.io" GO111MODULE=on go build -o livetv .
+RUN GO111MODULE=auto go build -o livetv .
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates tzdata libc6-compat libgcc libstdc++ youtube-dl

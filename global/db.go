@@ -2,8 +2,8 @@ package global
 
 import (
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
-	"https://github.com/NatoriMisong/livetv/model"
+    "github.com/jinzhu/gorm/dialects/sqlite"
+	"github.com/NatoriMisong/livetv/model"
 )
 
 var DB *gorm.DB
