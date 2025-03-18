@@ -2,7 +2,6 @@ package global
 
 import (
 	"github.com/jinzhu/gorm"
-    "github.com/jinzhu/gorm/dialects/sqlite"
 	"github.com/NatoriMisong/livetv/model"
 )
 
