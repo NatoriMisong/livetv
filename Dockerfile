@@ -2,7 +2,7 @@ FROM golang:alpine AS builder
 RUN apk update && apk --no-cache add build-base
 WORKDIR /go/src/github.com/NatoriMisong/livetv/
 COPY . . 
-RUN GO111MODULE=auto go build -o livetv .
+RUN GO111MODULE=auto CGO_CFLAGS="-D_LARGEFILE64_SOURCE" go build -o livetv .
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates tzdata libc6-compat libgcc libstdc++ youtube-dl
