@@ -155,6 +155,50 @@ func DeleteChannelHandler(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/")
 }
 
+func UpdateChannelHandler(c *gin.Context) {
+	if sessions.Default(c).Get("logined") != true {
+		c.Redirect(http.StatusFound, "/login")
+	}
+	chID := util.String2Uint(c.PostForm("id"))
+	if chID == 0 {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+			"ErrMsg": "empty id",
+		})
+		return
+	}
+	chName := c.PostForm("name")
+	chURL := c.PostForm("url")
+	chProxy := c.PostForm("proxy") != ""
+	if chName == "" || chURL == "" {
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+			"ErrMsg": "name or url cannot be empty",
+		})
+		return
+	}
+	// 获取现有频道
+	channel, err := service.GetChannel(chID)
+	if err != nil {
+		log.Println(err.Error())
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+			"ErrMsg": err.Error(),
+		})
+		return
+	}
+	// 更新频道信息
+	channel.Name = chName
+	channel.URL = chURL
+	channel.Proxy = chProxy
+	err = service.SaveChannel(channel)
+	if err != nil {
+		log.Println(err.Error())
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+			"ErrMsg": err.Error(),
+		})
+		return
+	}
+	c.Redirect(http.StatusFound, "/")
+}
+
 func UpdateConfigHandler(c *gin.Context) {
 	if sessions.Default(c).Get("logined") != true {
 		c.Redirect(http.StatusFound, "/login")
