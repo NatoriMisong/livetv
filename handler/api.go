@@ -9,9 +9,9 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"github.com/zjyl1994/livetv/model"
-	"github.com/zjyl1994/livetv/service"
-	"github.com/zjyl1994/livetv/util"
+	"github.com/NatoriMisong/livetv/model"
+	"github.com/NatoriMisong/livetv/service"
+	"github.com/NatoriMisong/livetv/util"
 
 	"golang.org/x/text/language"
 )

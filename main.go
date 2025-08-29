@@ -16,9 +16,9 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/robfig/cron/v3"
-	"github.com/zjyl1994/livetv/global"
-	"github.com/zjyl1994/livetv/route"
-	"github.com/zjyl1994/livetv/service"
+	"github.com/NatoriMisong/livetv/global"
+	"github.com/NatoriMisong/livetv/route"
+	"github.com/NatoriMisong/livetv/service"
 )
 
 func main() {

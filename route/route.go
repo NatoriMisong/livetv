@@ -2,7 +2,7 @@ package route
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/zjyl1994/livetv/handler"
+	"github.com/NatoriMisong/livetv/handler"
 )
 
 func Register(r *gin.Engine) {
