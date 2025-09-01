@@ -90,7 +90,7 @@ func LiveHandler(c *gin.Context) {
 		}
 		bodyString := string(bodyBytes)
 		if channelInfo.Proxy {
-			m3u8Body = service.M3U8Process(bodyString, baseUrl+"/live.ts?k=")
+			m3u8Body = service.M3U8Process(bodyString, baseUrl+"/live.ts?k="+securityKey+"&url=")
 		} else {
 			m3u8Body = bodyString
 		}
@@ -100,7 +100,16 @@ func LiveHandler(c *gin.Context) {
 }
 
 func TsProxyHandler(c *gin.Context) {
-	zipedRemoteURL := c.Query("k")
+	// 验证security_key
+	token := c.Query("k")
+	actualKey, err := service.GetConfig("security_key")
+	if err != nil || token != actualKey {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	
+	// 获取和解压远程URL
+	zipedRemoteURL := c.Query("url")
 	remoteURL, err := util.DecompressString(zipedRemoteURL)
 	if err != nil {
 		log.Println(err)

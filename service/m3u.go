@@ -12,6 +12,12 @@ func M3UGenerate() (string, error) {
 		log.Println(err)
 		return "", err
 	}
+	// 获取安全密钥
+	securityKey, err := GetConfig("security_key")
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
 	channels, err := GetAllChannel()
 	if err != nil {
 		log.Println(err)
@@ -26,6 +32,8 @@ func M3UGenerate() (string, error) {
 		m3u.WriteString(baseUrl)
 		m3u.WriteString("/live.m3u8?c=")
 		m3u.WriteString(strconv.Itoa(int(v.ID)))
+		m3u.WriteString("&k=")
+		m3u.WriteString(securityKey)
 		m3u.WriteString("\n")
 	}
 	return m3u.String(), nil
