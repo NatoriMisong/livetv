@@ -205,6 +205,13 @@
         $('#editChannelModal').modal('show');
       });
       
+      // 样式调整
+      $('.drag-handle').css({
+        'cursor': 'move',
+        'padding': '5px',
+        'display': 'inline-block'
+      });
+      
       // 添加拖放排序功能
       var channelTable = $('.table.table-striped');
       var channelBody = channelTable.find('tbody');
@@ -218,60 +225,33 @@
       // 初始化jQuery UI sortable
       channelBody.sortable({
         handle: '.drag-handle',
-        items: 'tr.channel-row:not([draggable="false"])'
-      });
-      
-      // 样式调整
-      $('.drag-handle').css({
-        'cursor': 'move',
-        'padding': '5px',
-        'display': 'inline-block'
-      });
-      
-      // 为所有可拖动的行添加拖放事件
-      $('.channel-row[draggable="true"]').on({
-        dragstart: function(e) {
-          e.originalEvent.dataTransfer.setData('text/plain', $(this).index());
-          $(this).addClass('dragging');
+        items: 'tr.channel-row[draggable="true"]',
+        axis: 'y',
+        opacity: 0.8,
+        placeholder: 'bg-warning',
+        start: function(e, ui) {
+          ui.item.addClass('dragging');
         },
-        dragend: function() {
-          $(this).removeClass('dragging');
-        },
-        dragover: function(e) {
-          e.preventDefault();
-        },
-        drop: function(e) {
-          e.preventDefault();
+        stop: function(e, ui) {
+          ui.item.removeClass('dragging');
           
-          // 获取被拖动元素的原始位置
-          var draggedIndex = parseInt(e.originalEvent.dataTransfer.getData('text/plain'));
-          var targetIndex = $(this).index();
+          // 获取被拖动的行
+          var movedRow = ui.item;
+          var movedId = movedRow.find('.channel-id').text();
+          var movedName = movedRow.find('td:nth-child(3)').text();
+          var movedUrl = movedRow.find('td:nth-child(4)').text();
+          var movedProxy = movedRow.find('td:nth-child(6)').find('.glyphicon-ok').length > 0;
           
-          // 如果拖动到相同位置，不执行操作
-          if (draggedIndex === targetIndex) return;
+          // 计算新的序号位置 - 基于新的排序位置
+          var newIndex = channelBody.find('tr.channel-row[draggable="true"]').index(movedRow) + 1;
           
-          // 获取所有频道行
-          var channelRows = $('.channel-row');
+          // 获取原来的序号
+          var originalIndex = movedRow.find('.channel-id').text();
           
-          // 获取被拖动的频道数据
-          var draggedRow = channelRows.eq(draggedIndex);
-          var draggedId = draggedRow.find('.channel-id').text();
-          var draggedName = draggedRow.find('td:nth-child(3)').text();
-          var draggedUrl = draggedRow.find('td:nth-child(4)').text();
-          var draggedProxy = draggedRow.find('td:nth-child(6)').find('.glyphicon-ok').length > 0;
+          // 如果序号没有变化，不执行操作
+          if (parseInt(originalIndex) === newIndex) return;
           
-          // 计算新的序号位置
-          // 注意：序号是从1开始的，而索引是从0开始的
-          var newIndex;
-          if (draggedIndex < targetIndex) {
-            // 向下拖动，新序号是目标序号+1
-            newIndex = parseInt(channelRows.eq(targetIndex).find('.channel-id').text()) + 1;
-          } else {
-            // 向上拖动，新序号是目标序号
-            newIndex = parseInt(channelRows.eq(targetIndex).find('.channel-id').text());
-          }
-          
-          // 创建一个隐藏的表单并提交
+          // 创建一个隐藏的表单并提交更新
           var form = $('<form>', {
             'method': 'POST',
             'action': '/api/updatechannel'
@@ -280,7 +260,7 @@
           form.append($('<input>', {
             'type': 'hidden',
             'name': 'id',
-            'value': draggedId
+            'value': movedId
           }));
           
           form.append($('<input>', {
@@ -292,16 +272,16 @@
           form.append($('<input>', {
             'type': 'hidden',
             'name': 'name',
-            'value': draggedName
+            'value': movedName
           }));
           
           form.append($('<input>', {
             'type': 'hidden',
             'name': 'url',
-            'value': draggedUrl
+            'value': movedUrl
           }));
           
-          if (draggedProxy) {
+          if (movedProxy) {
             form.append($('<input>', {
               'type': 'hidden',
               'name': 'proxy',
