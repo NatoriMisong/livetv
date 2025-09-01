@@ -11,6 +11,16 @@
       <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
     <![endif]-->
     <link href="/assert/css/index.css" rel="stylesheet">
+    <style>
+      .drag-handle {
+        cursor: move;
+        padding: 0 5px;
+        user-select: none;
+      }
+      .channel-row.dragging {
+        opacity: 0.5;
+      }
+    </style>
   </head>
   <body>
     <div class="container">
@@ -89,13 +99,13 @@
               <th></th>
           </tr>
           {{range .Channels}}
-          <tr>
+          <tr class="channel-row" draggable="true" data-id="{{.ID}}" data-name="{{.Name}}" data-url="{{.URL}}" data-proxy="{{.Proxy}}">
               <td>
                 {{if ne .ID 0}}
-                <input type="range" min="1" max="{{len $.Channels}}" value="{{.ID}}" class="channel-slider" data-id="{{.ID}}" data-name="{{.Name}}" data-url="{{.URL}}" data-proxy="{{.Proxy}}" style="width: 60px;">
+                <span class="drag-handle">☰</span>
                 {{end}}
               </td>
-              <td>{{.ID}}</td>
+              <td class="channel-id">{{.ID}}</td>
               <td>{{.Name}}</td>
               <td>{{.URL}}</td>
               <td>{{.M3U8}}</td>
@@ -181,12 +191,13 @@
     <script src="/assert/js/jquery.min.js"></script>
     <script src="/assert/js/bootstrap.min.js"></script>
     <script src="/assert/js/bootbox.all.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <script>
     $(document).ready(function() {
       $('.edit-channel').click(function(e) {
         e.preventDefault();
         var id = $(this).data('id');
-        var index = $(this).closest('tr').find('td:nth-child(2)').text();
+        var index = $(this).closest('tr').find('td.channel-id').text();
         var name = $(this).data('name');
         var url = $(this).data('url');
         var proxy = $(this).data('proxy');
@@ -200,53 +211,78 @@
         $('#editChannelModal').modal('show');
       });
       
-      // 滑块功能实现
-      $('.channel-slider').on('change', function() {
-        var id = $(this).data('id');
-        var newIndex = $(this).val();
-        var name = $(this).data('name');
-        var url = $(this).data('url');
-        var proxy = $(this).data('proxy');
-        
-        // 创建一个隐藏的表单并提交
-        var form = $('<form>', {
-          'method': 'POST',
-          'action': '/api/updatechannel'
-        });
-        
-        form.append($('<input>', {
-          'type': 'hidden',
-          'name': 'id',
-          'value': id
-        }));
-        
-        form.append($('<input>', {
-          'type': 'hidden',
-          'name': 'index',
-          'value': newIndex
-        }));
-        
-        form.append($('<input>', {
-          'type': 'hidden',
-          'name': 'name',
-          'value': name
-        }));
-        
-        form.append($('<input>', {
-          'type': 'hidden',
-          'name': 'url',
-          'value': url
-        }));
-        
-        if (proxy === true || proxy === 'true') {
+      // 初始化拖放排序功能
+      $('.table tbody').sortable({
+        handle: '.drag-handle',
+        items: 'tr.channel-row',
+        axis: 'y',
+        cursor: 'move',
+        opacity: 0.8,
+        placeholder: 'bg-warning',
+        start: function(e, ui) {
+          ui.item.addClass('dragging');
+        },
+        stop: function(e, ui) {
+          ui.item.removeClass('dragging');
+          
+          // 获取拖拽后的所有行
+          var rows = $('.channel-row');
+          var movedRow = ui.item;
+          var movedId = movedRow.data('id');
+          var originalIndex = movedRow.find('td.channel-id').text();
+          
+          // 计算新的序号
+          var newIndex = rows.index(movedRow) + 1;
+          
+          // 如果序号没有变化，不需要提交
+          if (parseInt(originalIndex) === newIndex) {
+            return;
+          }
+          
+          // 创建隐藏表单并提交更新
+          var name = movedRow.data('name');
+          var url = movedRow.data('url');
+          var proxy = movedRow.data('proxy');
+          
+          var form = $('<form>', {
+            'method': 'POST',
+            'action': '/api/updatechannel'
+          });
+          
           form.append($('<input>', {
             'type': 'hidden',
-            'name': 'proxy',
-            'value': 'on'
+            'name': 'id',
+            'value': movedId
           }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'index',
+            'value': newIndex
+          }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'name',
+            'value': name
+          }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'url',
+            'value': url
+          }));
+          
+          if (proxy === true || proxy === 'true') {
+            form.append($('<input>', {
+              'type': 'hidden',
+              'name': 'proxy',
+              'value': 'on'
+            }));
+          }
+          
+          form.appendTo('body').submit();
         }
-        
-        form.appendTo('body').submit();
       });
     });
     </script>

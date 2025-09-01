@@ -89,13 +89,13 @@
               <th></th>
           </tr>
           {{range .Channels}}
-          <tr>
+          <tr class="channel-row" {{if ne .ID 0}}draggable="true"{{end}}>
               <td>
                 {{if ne .ID 0}}
-                <input type="range" min="1" max="{{len $.Channels}}" value="{{.ID}}" class="channel-slider" data-id="{{.ID}}" data-name="{{.Name}}" data-url="{{.URL}}" data-proxy="{{.Proxy}}" style="width: 60px;">
+                <span class="drag-handle">☰</span>
                 {{end}}
               </td>
-              <td>{{.ID}}</td>
+              <td class="channel-id">{{.ID}}</td>
               <td>{{.Name}}</td>
               <td>{{.URL}}</td>
               <td>{{.M3U8}}</td>
@@ -185,12 +185,13 @@
     <script src="/assert/js/jquery.min.js"></script>
     <script src="/assert/js/bootstrap.min.js"></script>
     <script src="/assert/js/bootbox.all.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <script>
     $(document).ready(function() {
       $('.edit-channel').click(function(e) {
         e.preventDefault();
         var id = $(this).data('id');
-        var index = $(this).closest('tr').find('td:nth-child(2)').text();
+        var index = $(this).closest('tr').find('td.channel-id').text();
         var name = $(this).data('name');
         var url = $(this).data('url');
         var proxy = $(this).data('proxy');
@@ -204,53 +205,115 @@
         $('#editChannelModal').modal('show');
       });
       
-      // 滑块功能实现
-      $('.channel-slider').on('change', function() {
-        var id = $(this).data('id');
-        var newIndex = $(this).val();
-        var name = $(this).data('name');
-        var url = $(this).data('url');
-        var proxy = $(this).data('proxy');
-        
-        // 创建一个隐藏的表单并提交
-        var form = $('<form>', {
-          'method': 'POST',
-          'action': '/api/updatechannel'
-        });
-        
-        form.append($('<input>', {
-          'type': 'hidden',
-          'name': 'id',
-          'value': id
-        }));
-        
-        form.append($('<input>', {
-          'type': 'hidden',
-          'name': 'index',
-          'value': newIndex
-        }));
-        
-        form.append($('<input>', {
-          'type': 'hidden',
-          'name': 'name',
-          'value': name
-        }));
-        
-        form.append($('<input>', {
-          'type': 'hidden',
-          'name': 'url',
-          'value': url
-        }));
-        
-        if (proxy === true || proxy === 'true') {
+      // 添加拖放排序功能
+      var channelTable = $('.table.table-striped');
+      var channelBody = channelTable.find('tbody');
+      
+      // 确保有tbody元素
+      if (channelBody.length === 0) {
+        channelBody = $('<tbody>').appendTo(channelTable);
+        channelTable.find('tr:not(:first)').appendTo(channelBody);
+      }
+      
+      // 初始化jQuery UI sortable
+      channelBody.sortable({
+        handle: '.drag-handle',
+        items: 'tr.channel-row:not([draggable="false"])'
+      });
+      
+      // 样式调整
+      $('.drag-handle').css({
+        'cursor': 'move',
+        'padding': '5px',
+        'display': 'inline-block'
+      });
+      
+      // 为所有可拖动的行添加拖放事件
+      $('.channel-row[draggable="true"]').on({
+        dragstart: function(e) {
+          e.originalEvent.dataTransfer.setData('text/plain', $(this).index());
+          $(this).addClass('dragging');
+        },
+        dragend: function() {
+          $(this).removeClass('dragging');
+        },
+        dragover: function(e) {
+          e.preventDefault();
+        },
+        drop: function(e) {
+          e.preventDefault();
+          
+          // 获取被拖动元素的原始位置
+          var draggedIndex = parseInt(e.originalEvent.dataTransfer.getData('text/plain'));
+          var targetIndex = $(this).index();
+          
+          // 如果拖动到相同位置，不执行操作
+          if (draggedIndex === targetIndex) return;
+          
+          // 获取所有频道行
+          var channelRows = $('.channel-row');
+          
+          // 获取被拖动的频道数据
+          var draggedRow = channelRows.eq(draggedIndex);
+          var draggedId = draggedRow.find('.channel-id').text();
+          var draggedName = draggedRow.find('td:nth-child(3)').text();
+          var draggedUrl = draggedRow.find('td:nth-child(4)').text();
+          var draggedProxy = draggedRow.find('td:nth-child(6)').find('.glyphicon-ok').length > 0;
+          
+          // 计算新的序号位置
+          // 注意：序号是从1开始的，而索引是从0开始的
+          var newIndex;
+          if (draggedIndex < targetIndex) {
+            // 向下拖动，新序号是目标序号+1
+            newIndex = parseInt(channelRows.eq(targetIndex).find('.channel-id').text()) + 1;
+          } else {
+            // 向上拖动，新序号是目标序号
+            newIndex = parseInt(channelRows.eq(targetIndex).find('.channel-id').text());
+          }
+          
+          // 创建一个隐藏的表单并提交
+          var form = $('<form>', {
+            'method': 'POST',
+            'action': '/api/updatechannel'
+          });
+          
           form.append($('<input>', {
             'type': 'hidden',
-            'name': 'proxy',
-            'value': 'on'
+            'name': 'id',
+            'value': draggedId
           }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'index',
+            'value': newIndex
+          }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'name',
+            'value': draggedName
+          }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'url',
+            'value': draggedUrl
+          }));
+          
+          if (draggedProxy) {
+            form.append($('<input>', {
+              'type': 'hidden',
+              'name': 'proxy',
+              'value': 'on'
+            }));
+          }
+          
+          // 延迟提交，让用户看到视觉反馈
+          setTimeout(function() {
+            form.appendTo('body').submit();
+          }, 300);
         }
-        
-        form.appendTo('body').submit();
       });
     });
     </script>
