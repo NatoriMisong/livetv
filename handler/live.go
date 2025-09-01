@@ -15,6 +15,14 @@ import (
 )
 
 func M3UHandler(c *gin.Context) {
+	// 验证security_key
+	securityKey := c.Query("k")
+	actualKey, err := service.GetConfig("security_key")
+	if err != nil || securityKey != actualKey {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	
 	content, err := service.M3UGenerate()
 	if err != nil {
 		log.Println(err)
@@ -25,6 +33,14 @@ func M3UHandler(c *gin.Context) {
 }
 
 func LiveHandler(c *gin.Context) {
+	// 验证security_key
+	securityKey := c.Query("k")
+	actualKey, err := service.GetConfig("security_key")
+	if err != nil || securityKey != actualKey {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	
 	var m3u8Body string
 	channelCacheKey := c.Query("c")
 	iBody, found := global.M3U8Cache.Get(channelCacheKey)

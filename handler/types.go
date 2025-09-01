@@ -9,7 +9,8 @@ type Channel struct {
 }
 
 type Config struct {
-	BaseURL string
-	Cmd     string
-	Args    string
+	BaseURL     string
+	Cmd         string
+	Args        string
+	SecurityKey string
 }

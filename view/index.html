@@ -161,6 +161,16 @@
                   </span>
                 </div>
               </div>
+              <div class="form-group">
+                <label for="inputSecurityKey">Security Key</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="inputSecurityKey" name="security_key" value="{{.Configs.SecurityKey}}" pattern="^.{12,12}$" maxlength="12">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="button" id="generate-security-key">Generate Random</button>
+                  </span>
+                </div>
+                <p class="help-block">Must be exactly 12 characters. Used to protect access to live streams.</p>
+              </div>
               <button type="submit" class="btn btn-default">Save Config</button>
             </form>
           </div>
@@ -198,6 +208,19 @@
     </div>
     <script src="/assert/js/jquery.min.js"></script>
     <script src="/assert/js/bootstrap.min.js"></script>
+    <script>
+      // 随机生成12字符安全密钥
+      $(document).ready(function() {
+        $('#generate-security-key').click(function() {
+          var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+          var result = '';
+          for (var i = 0; i < 12; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          $('#inputSecurityKey').val(result);
+        });
+      });
+    </script>
     <script src="/assert/js/bootbox.all.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <script>

@@ -84,6 +84,19 @@ func loadConfig() (Config, error) {
 	} else {
 		conf.BaseURL = burl
 	}
+	// 加载security_key配置，如果不存在则生成一个随机12字符值
+	securityKey, err := service.GetConfig("security_key")
+	if err != nil {
+		// 检查是否是配置不存在的错误
+		if strings.Contains(err.Error(), "not found") {
+			// 生成12字符随机值
+			securityKey = util.RandString(12)
+			service.SetConfig("security_key", securityKey)
+		} else {
+			return conf, err
+		}
+	}
+	conf.SecurityKey = securityKey
 	return conf, nil
 }
 
@@ -293,6 +306,18 @@ func UpdateConfigHandler(c *gin.Context) {
 	}
 	if len(baseUrl) > 0 {
 		err := service.SetConfig("base_url", baseUrl)
+		if err != nil {
+			log.Println(err.Error())
+			c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+				"ErrMsg": err.Error(),
+			})
+			return
+		}
+	}
+	// 处理security_key配置
+	securityKey := c.PostForm("security_key")
+	if len(securityKey) > 0 {
+		err := service.SetConfig("security_key", securityKey)
 		if err != nil {
 			log.Println(err.Error())
 			c.HTML(http.StatusInternalServerError, "error.html", gin.H{
