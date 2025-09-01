@@ -205,11 +205,12 @@
         $('#editChannelModal').modal('show');
       });
       
-      // 样式调整
+      // 样式调整 - 减小拖拽手柄大小
       $('.drag-handle').css({
         'cursor': 'move',
-        'padding': '5px',
-        'display': 'inline-block'
+        'padding': '2px 5px',
+        'display': 'inline-block',
+        'font-size': '14px'
       });
       
       // 添加拖放排序功能

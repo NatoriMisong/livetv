@@ -12,21 +12,12 @@ import (
 	"github.com/NatoriMisong/livetv/model"
 	"github.com/NatoriMisong/livetv/service"
 	"github.com/NatoriMisong/livetv/util"
-
-	"golang.org/x/text/language"
 )
-
-var langMatcher = language.NewMatcher([]language.Tag{
-	language.English,
-	language.Chinese,
-})
 
 func IndexHandler(c *gin.Context) {
 	if sessions.Default(c).Get("logined") != true {
 		c.Redirect(http.StatusFound, "/login")
 	}
-	acceptLang := c.Request.Header.Get("Accept-Language")
-	langTag, _ := language.MatchStrings(langMatcher, acceptLang)
 
 	baseUrl, err := service.GetConfig("base_url")
 	if err != nil {
@@ -44,12 +35,7 @@ func IndexHandler(c *gin.Context) {
 		})
 		return
 	}
-	var m3uName string
-	if langTag == language.Chinese {
-		m3uName = "M3U 頻道列表"
-	} else {
-		m3uName = "M3U File"
-	}
+	m3uName := "M3U File"
 	channels := make([]Channel, len(channelModels)+1)
 	channels[0] = Channel{
 		ID:   0,
@@ -74,13 +60,8 @@ func IndexHandler(c *gin.Context) {
 		return
 	}
 
-	var templateFilename string
-	if langTag == language.Chinese {
-		templateFilename = "index-zh.html"
-	} else {
-		templateFilename = "index.html"
-	}
-	c.HTML(http.StatusOK, templateFilename, gin.H{
+	// 只使用英文模板
+	c.HTML(http.StatusOK, "index.html", gin.H{
 		"Channels": channels,
 		"Configs":  conf,
 	})
