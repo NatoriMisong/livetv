@@ -206,25 +206,32 @@ func UpdateChannelHandler(c *gin.Context) {
 					return
 				}
 				
-				// 更新序号逻辑
-				// 如果新序号小于或等于当前所有频道数量，调整受影响的频道序号
-				if uint64(len(allChannels)) >= chIndex {
-					// 查找新序号位置的频道
-					for i := range allChannels {
-						if allChannels[i].ID == channel.ID {
-							// 跳过当前正在编辑的频道
-							continue
-						}
-						// 调整其他频道的序号
-						if (channel.ID < allChannels[i].ID && uint64(i+1) >= chIndex) || (channel.ID > allChannels[i].ID && uint64(i+1) >= chIndex) {
-							if uint64(i+1) >= chIndex && allChannels[i].ID != channel.ID {
-								if channel.ID > allChannels[i].ID {
-									// 向前移动
-									allChannels[i].ID--
-								} else {
-									// 向后移动
-									allChannels[i].ID++
-								}
+				// 获取频道的当前位置
+				var currentPos int
+				for i, ch := range allChannels {
+					if ch.ID == channel.ID {
+						currentPos = i + 1 // 位置从1开始计数
+						break
+					}
+				}
+				
+				// 如果新序号与当前位置不同，才进行调整
+				if uint64(currentPos) != chIndex {
+					// 如果新序号大于频道总数，则将其设置为总数+1
+					if chIndex > uint64(len(allChannels)) {
+						chIndex = uint64(len(allChannels)) + 1
+					}
+					
+					// 调整其他频道的序号
+					if uint64(currentPos) < chIndex {
+						// 频道向后移动，需要将中间的频道序号减1
+						for i := range allChannels {
+							if allChannels[i].ID == channel.ID {
+								continue // 跳过当前正在编辑的频道
+							}
+							// 调整在当前位置和新位置之间的频道
+							if uint64(i+1) > uint64(currentPos) && uint64(i+1) <= chIndex {
+								allChannels[i].ID--
 								// 保存更新后的频道
 								err := service.SaveChannel(allChannels[i])
 								if err != nil {
@@ -235,10 +242,32 @@ func UpdateChannelHandler(c *gin.Context) {
 									return
 								}
 							}
+						}
+					} else if uint64(currentPos) > chIndex {
+						// 频道向前移动，需要将中间的频道序号加1
+						for i := range allChannels {
+							if allChannels[i].ID == channel.ID {
+								continue // 跳过当前正在编辑的频道
+							}
+							// 调整在新位置和当前位置之间的频道
+							if uint64(i+1) >= chIndex && uint64(i+1) < uint64(currentPos) {
+								allChannels[i].ID++
+								// 保存更新后的频道
+								err := service.SaveChannel(allChannels[i])
+								if err != nil {
+									log.Println(err.Error())
+									c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+										"ErrMsg": err.Error(),
+									})
+									return
+								}
+							}
+						}
 					}
+					
+					// 设置当前频道的新序号
+					channel.ID = uint(chIndex)
 				}
-				// 设置当前频道的新序号
-				channel.ID = uint(chIndex)
 			}
 		}
 	}
