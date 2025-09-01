@@ -22,3 +22,7 @@ func GetChannel(channelNumber uint) (channel model.Channel, err error) {
 	err = global.DB.Where("id = ?", channelNumber).First(&channel, channelNumber).Error
 	return
 }
+
+func DeleteAllChannels() error {
+	return global.DB.Where("1 = 1").Delete(model.Channel{}).Error
+}

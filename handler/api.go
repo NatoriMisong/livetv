@@ -4,14 +4,15 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-gonic/gin"
 	"github.com/NatoriMisong/livetv/model"
 	"github.com/NatoriMisong/livetv/service"
 	"github.com/NatoriMisong/livetv/util"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-gonic/gin"
 
 	"golang.org/x/text/language"
 )
@@ -189,7 +190,7 @@ func UpdateChannelHandler(c *gin.Context) {
 	channel.Name = chName
 	channel.URL = chURL
 	channel.Proxy = chProxy
-	
+
 	// 处理序号更新
 	if chIndexStr != "" {
 		chIndex, err := strconv.ParseUint(chIndexStr, 10, 64)
@@ -205,7 +206,7 @@ func UpdateChannelHandler(c *gin.Context) {
 					})
 					return
 				}
-				
+
 				// 获取频道的当前位置
 				var currentPos int
 				for i, ch := range allChannels {
@@ -214,17 +215,22 @@ func UpdateChannelHandler(c *gin.Context) {
 						break
 					}
 				}
-				
+
 				// 如果新序号与当前位置不同，才进行调整
 				if uint64(currentPos) != chIndex {
 					// 如果新序号大于频道总数，则将其设置为总数+1
 					if chIndex > uint64(len(allChannels)) {
 						chIndex = uint64(len(allChannels)) + 1
 					}
-					
+
 					// 调整其他频道的序号
 					if uint64(currentPos) < chIndex {
 						// 频道向后移动，需要将中间的频道序号减1
+						// 先确保allChannels按ID排序
+						sort.Slice(allChannels, func(i, j int) bool {
+							return allChannels[i].ID < allChannels[j].ID
+						})
+
 						for i := range allChannels {
 							if allChannels[i].ID == channel.ID {
 								continue // 跳过当前正在编辑的频道
@@ -245,6 +251,11 @@ func UpdateChannelHandler(c *gin.Context) {
 						}
 					} else if uint64(currentPos) > chIndex {
 						// 频道向前移动，需要将中间的频道序号加1
+						// 先确保allChannels按ID排序
+						sort.Slice(allChannels, func(i, j int) bool {
+							return allChannels[i].ID < allChannels[j].ID
+						})
+
 						for i := range allChannels {
 							if allChannels[i].ID == channel.ID {
 								continue // 跳过当前正在编辑的频道
@@ -264,14 +275,14 @@ func UpdateChannelHandler(c *gin.Context) {
 							}
 						}
 					}
-					
+
 					// 设置当前频道的新序号
 					channel.ID = uint(chIndex)
 				}
 			}
 		}
 	}
-	
+
 	err = service.SaveChannel(channel)
 	if err != nil {
 		log.Println(err.Error())
@@ -352,7 +363,7 @@ func LoginActionHandler(c *gin.Context) {
 	crsfToken := c.PostForm("crsf")
 	if crsfToken != session.Get("crsfToken") {
 		c.HTML(http.StatusOK, "error.html", gin.H{
-			"ErrMsg": "Password error!",
+			"ErrMsg": "CSRF token mismatch!",
 		})
 		return
 	}
@@ -410,6 +421,7 @@ func ChangePasswordHandler(c *gin.Context) {
 		c.HTML(http.StatusOK, "error.html", gin.H{
 			"ErrMsg": "Password mismatch!",
 		})
+		return
 	}
 	err := service.SetConfig("password", pass)
 	if err != nil {
@@ -420,4 +432,171 @@ func ChangePasswordHandler(c *gin.Context) {
 		return
 	}
 	LogoutHandler(c)
+}
+
+// UpdateChannelOrderHandler 处理拖拽更新频道顺序的请求
+func UpdateChannelOrderHandler(c *gin.Context) {
+	if sessions.Default(c).Get("logined") != true {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"error":   "Unauthorized",
+		})
+		return
+	}
+
+	// 定义请求数据结构
+	type ChannelOrder struct {
+		ID       string `json:"id"`
+		NewIndex int    `json:"newIndex"`
+	}
+
+	var channelOrders []ChannelOrder
+	if err := c.ShouldBindJSON(&channelOrders); err != nil {
+		log.Println("Failed to parse request body:", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid request body",
+		})
+		return
+	}
+
+	// 获取所有频道
+	allChannels, err := service.GetAllChannel()
+	if err != nil {
+		log.Println("Failed to get all channels:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Failed to get channels",
+		})
+		return
+	}
+
+	// 创建ID到频道的映射
+	channelMap := make(map[uint]*model.Channel)
+	for i := range allChannels {
+		channelMap[allChannels[i].ID] = &allChannels[i]
+	}
+
+	// 创建一个映射来保存频道名称到新索引的映射，这样在重新创建频道后仍然有效
+	nameToNewIndex := make(map[string]int)
+	for _, order := range channelOrders {
+		id := util.String2Uint(order.ID)
+		if channel, exists := channelMap[id]; exists {
+			nameToNewIndex[channel.Name] = order.NewIndex
+		}
+	}
+
+	// 更新频道的ID（序号）
+	// 首先创建一个临时频道列表，用于保存所有频道的数据
+	tempChannels := make([]model.Channel, len(allChannels))
+	for i := range allChannels {
+		// 深拷贝频道数据
+		tempChannels[i] = model.Channel{
+			Name:  allChannels[i].Name,
+			URL:   allChannels[i].URL,
+			Proxy: allChannels[i].Proxy,
+		}
+	}
+
+	// 删除所有现有频道
+	err = service.DeleteAllChannels()
+	if err != nil {
+		log.Println("Failed to delete all channels:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Failed to reset channels",
+		})
+		return
+	}
+
+	// 使用临时保存的频道数据重新创建频道
+	allChannels = make([]model.Channel, len(tempChannels))
+	for i := range tempChannels {
+		// 设置临时ID，确保唯一
+		allChannels[i] = tempChannels[i]
+		allChannels[i].ID = uint(i + 1) // 临时使用1到n的ID
+		err := service.SaveChannel(allChannels[i])
+		if err != nil {
+			log.Println("Failed to recreate channel:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"error":   "Failed to recreate channels",
+			})
+			return
+		}
+	}
+
+	// 重新获取所有频道（可选，用于确保数据一致性）
+	allChannels, err = service.GetAllChannel()
+	if err != nil {
+		log.Println("Failed to get all channels after recreation:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Failed to get channels after recreation",
+		})
+		return
+	}
+
+	// 重新创建newOrderMap，使用频道名称映射
+	newOrderMap := make(map[uint]int)
+	for i := range allChannels {
+		if newIndex, exists := nameToNewIndex[allChannels[i].Name]; exists {
+			newOrderMap[allChannels[i].ID] = newIndex
+		}
+	}
+
+	// 根据新的顺序更新ID
+	// 创建一个新的频道切片，按照新的顺序排序
+	sortedChannels := make([]model.Channel, len(allChannels))
+	// 先创建一个映射，记录哪些位置已经被填充
+	filledPositions := make(map[int]bool)
+
+	// 第一步：根据newOrderMap填充已知顺序的频道
+	for i := range allChannels {
+		id := allChannels[i].ID
+		if newIndex, exists := newOrderMap[id]; exists {
+			// 确保索引在有效范围内
+			if newIndex > 0 && newIndex <= len(sortedChannels) {
+				sortedChannels[newIndex-1] = allChannels[i]
+				filledPositions[newIndex-1] = true
+			}
+		}
+	}
+
+	// 第二步：处理未在newOrderMap中的频道，将它们放在未被填充的位置
+	var remainingChannels []model.Channel
+	for i := range allChannels {
+		id := allChannels[i].ID
+		if _, exists := newOrderMap[id]; !exists {
+			remainingChannels = append(remainingChannels, allChannels[i])
+		}
+	}
+
+	// 将剩余的频道填充到未被占用的位置
+	remainingIndex := 0
+	for i := range sortedChannels {
+		if !filledPositions[i] && remainingIndex < len(remainingChannels) {
+			sortedChannels[i] = remainingChannels[remainingIndex]
+			remainingIndex++
+		}
+	}
+
+	// 保存排序后的频道
+	for i := range sortedChannels {
+		sortedChannels[i].ID = uint(i + 1) // 序号从1开始
+		err := service.SaveChannel(sortedChannels[i])
+		if err != nil {
+			log.Println("Failed to save channel with new order:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"error":   "Failed to save channel order",
+			})
+			return
+		}
+	}
+
+	// 返回成功响应
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+	})
 }
