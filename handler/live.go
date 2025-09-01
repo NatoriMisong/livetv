@@ -90,20 +90,28 @@ func LiveHandler(c *gin.Context) {
 		}
 		bodyString := string(bodyBytes)
 		if channelInfo.Proxy {
-			m3u8Body = service.M3U8Process(bodyString, baseUrl+"/live.ts?k="+securityKey+"&url=")
+			// 记录处理前的URL信息
+			log.Printf("Processing M3U8 for channel %d with proxy, baseUrl: %s", channelNumber, baseUrl)
+			m3u8Body = service.M3U8Process(bodyString, baseUrl+"/live.ts?", securityKey)
+			// 记录处理后的前几行内容用于调试
+			lines := strings.SplitN(m3u8Body, "\n", 5)
+			log.Printf("Processed M3U8 first lines: %s", strings.Join(lines, "\n"))
 		} else {
 			m3u8Body = bodyString
 		}
 		global.M3U8Cache.Set(channelCacheKey, m3u8Body, 3*time.Second)
 	}
-	c.Data(http.StatusOK, "application/vnd.apple.mpegurl", []byte(m3u8Body))
+	// 设置正确的MIME类型和Cache-Control头
+	c.Header("Content-Type", "application/vnd.apple.mpegurl")
+	c.Header("Cache-Control", "no-cache")
+	c.String(http.StatusOK, m3u8Body)
 }
 
 func TsProxyHandler(c *gin.Context) {
 	// 验证security_key
-	token := c.Query("k")
+	securityKey := c.Query("k")
 	actualKey, err := service.GetConfig("security_key")
-	if err != nil || token != actualKey {
+	if err != nil || securityKey != actualKey {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}

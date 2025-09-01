@@ -27,6 +27,15 @@ func IndexHandler(c *gin.Context) {
 		})
 		return
 	}
+	// 获取安全密钥
+	securityKey, err := service.GetConfig("security_key")
+	if err != nil {
+		log.Println(err.Error())
+		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+			"ErrMsg": err.Error(),
+		})
+		return
+	}
 	channelModels, err := service.GetAllChannel()
 	if err != nil {
 		log.Println(err.Error())
@@ -40,14 +49,14 @@ func IndexHandler(c *gin.Context) {
 	channels[0] = Channel{
 		ID:   0,
 		Name: m3uName,
-		M3U8: baseUrl + "/lives.m3u",
+		M3U8: baseUrl + "/lives.m3u?k=" + securityKey,
 	}
 	for i, v := range channelModels {
 		channels[i+1] = Channel{
 			ID:    v.ID,
 			Name:  v.Name,
 			URL:   v.URL,
-			M3U8:  baseUrl + "/live.m3u8?c=" + strconv.Itoa(int(v.ID)),
+			M3U8:  baseUrl + "/live.m3u8?c=" + strconv.Itoa(int(v.ID)) + "&k=" + securityKey,
 			Proxy: v.Proxy,
 		}
 	}
