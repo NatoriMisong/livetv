@@ -169,6 +169,7 @@ func UpdateChannelHandler(c *gin.Context) {
 	chName := c.PostForm("name")
 	chURL := c.PostForm("url")
 	chProxy := c.PostForm("proxy") != ""
+	chIndexStr := c.PostForm("index")
 	if chName == "" || chURL == "" {
 		c.HTML(http.StatusInternalServerError, "error.html", gin.H{
 			"ErrMsg": "name or url cannot be empty",
@@ -188,6 +189,60 @@ func UpdateChannelHandler(c *gin.Context) {
 	channel.Name = chName
 	channel.URL = chURL
 	channel.Proxy = chProxy
+	
+	// 处理序号更新
+	if chIndexStr != "" {
+		chIndex, err := strconv.ParseUint(chIndexStr, 10, 64)
+		if err == nil {
+			// 如果序号有效且不为0，则进行序号更新
+			if chIndex > 0 {
+				// 首先获取当前所有频道
+				allChannels, err := service.GetAllChannel()
+				if err != nil {
+					log.Println(err.Error())
+					c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+						"ErrMsg": err.Error(),
+					})
+					return
+				}
+				
+				// 更新序号逻辑
+				// 如果新序号小于或等于当前所有频道数量，调整受影响的频道序号
+				if uint64(len(allChannels)) >= chIndex {
+					// 查找新序号位置的频道
+					for i := range allChannels {
+						if allChannels[i].ID == channel.ID {
+							// 跳过当前正在编辑的频道
+							continue
+						}
+						// 调整其他频道的序号
+						if (channel.ID < allChannels[i].ID && uint64(i+1) >= chIndex) || (channel.ID > allChannels[i].ID && uint64(i+1) >= chIndex) {
+							if uint64(i+1) >= chIndex && allChannels[i].ID != channel.ID {
+								if channel.ID > allChannels[i].ID {
+									// 向前移动
+									allChannels[i].ID--
+								} else {
+									// 向后移动
+									allChannels[i].ID++
+								}
+								// 保存更新后的频道
+								err := service.SaveChannel(allChannels[i])
+								if err != nil {
+									log.Println(err.Error())
+									c.HTML(http.StatusInternalServerError, "error.html", gin.H{
+										"ErrMsg": err.Error(),
+									})
+									return
+								}
+							}
+					}
+				}
+				// 设置当前频道的新序号
+				channel.ID = uint(chIndex)
+			}
+		}
+	}
+	
 	err = service.SaveChannel(channel)
 	if err != nil {
 		log.Println(err.Error())
