@@ -11,6 +11,12 @@
       <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
     <![endif]-->
     <link href="/assert/css/index.css" rel="stylesheet">
+    <style>
+      /* 表格单元格垂直居中 */
+      .table td {
+        vertical-align: middle !important;
+      }
+    </style>
   </head>
   <body>
     <div class="container">
@@ -33,7 +39,7 @@
             </div>
             <div class="checkbox">
               <label>
-                <input type="checkbox" name="proxy">Proxy stream
+                <input type="checkbox" name="proxy" checked>Proxy stream
               </label>
             </div>
             <button type="submit" class="btn btn-default">Add Channel</button>
@@ -51,10 +57,7 @@
               <div class="modal-body">
                 <form role="form" action="/api/updatechannel" method="POST">
                   <input type="hidden" id="editChannelId" name="id">
-                  <div class="form-group">
-                    <label for="editChannelIndex">Index</label>
-                    <input type="number" class="form-control" id="editChannelIndex" name="index">
-                  </div>
+
                   <div class="form-group">
                     <label for="editChannelName">Name</label>
                     <input type="text" class="form-control" id="editChannelName" name="name">
@@ -65,7 +68,7 @@
                   </div>
                   <div class="checkbox">
                     <label>
-                      <input type="checkbox" id="editChannelProxy" name="proxy">Proxy stream
+                      <input type="checkbox" id="editChannelProxy" name="proxy" checked>Proxy stream
                     </label>
                   </div>
                   <div class="modal-footer">
@@ -197,10 +200,9 @@
         var proxy = $(this).data('proxy');
         
         $('#editChannelId').val(id);
-        $('#editChannelIndex').val(index);
         $('#editChannelName').val(name);
         $('#editChannelUrl').val(url);
-        $('#editChannelProxy').prop('checked', proxy === 'true');
+        $('#editChannelProxy').prop('checked', true); // 默认勾选Proxy stream
         
         $('#editChannelModal').modal('show');
       });
