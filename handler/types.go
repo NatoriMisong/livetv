@@ -6,6 +6,8 @@ type Channel struct {
 	URL   string
 	M3U8  string
 	Proxy bool
+	Icon  string
+	Epg   string
 }
 
 type Config struct {

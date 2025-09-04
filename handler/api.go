@@ -52,14 +52,16 @@ func IndexHandler(c *gin.Context) {
 		M3U8: baseUrl + "/lives.m3u?k=" + securityKey,
 	}
 	for i, v := range channelModels {
-		channels[i+1] = Channel{
-			ID:    v.ID,
-			Name:  v.Name,
-			URL:   v.URL,
-			M3U8:  baseUrl + "/live.m3u8?c=" + strconv.Itoa(int(v.ID)) + "&k=" + securityKey,
-			Proxy: v.Proxy,
+			channels[i+1] = Channel{
+				ID:    v.ID,
+				Name:  v.Name,
+				URL:   v.URL,
+				M3U8:  baseUrl + "/live.m3u8?c=" + strconv.Itoa(int(v.ID)) + "&k=" + securityKey,
+				Proxy: v.Proxy,
+				Icon:  v.Icon,
+				Epg:   v.Epg,
+			}
 		}
-	}
 	conf, err := loadConfig()
 	if err != nil {
 		log.Println(err.Error())
@@ -120,10 +122,14 @@ func NewChannelHandler(c *gin.Context) {
 		return
 	}
 	chProxy := c.PostForm("proxy") != ""
+	chIcon := c.PostForm("icon")
+	chEpg := c.PostForm("epg")
 	mch := model.Channel{
 		Name:  chName,
 		URL:   chURL,
 		Proxy: chProxy,
+		Icon:  chIcon,
+		Epg:   chEpg,
 	}
 	err := service.SaveChannel(mch)
 	if err != nil {
@@ -192,6 +198,8 @@ func UpdateChannelHandler(c *gin.Context) {
 	channel.Name = chName
 	channel.URL = chURL
 	channel.Proxy = chProxy
+	channel.Icon = c.PostForm("icon")
+	channel.Epg = c.PostForm("epg")
 	
 	// 处理序号更新
 	if chIndexStr != "" {
