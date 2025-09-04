@@ -26,7 +26,16 @@ func M3UGenerate() (string, error) {
 	var m3u strings.Builder
 	m3u.WriteString("#EXTM3U\n")
 	for _, v := range channels {
-		m3u.WriteString("#EXTINF:-1,")
+		m3u.WriteString("#EXTINF:-1")
+		// 添加图标信息
+		if v.Icon != "" {
+			m3u.WriteString(" tvg-logo=\"" + v.Icon + "\"")
+		}
+		// 添加EPG信息
+		if v.Epg != "" {
+			m3u.WriteString(" tvg-url=\"" + v.Epg + "\"")
+		}
+		m3u.WriteString(",")
 		m3u.WriteString(v.Name)
 		m3u.WriteString("\n")
 		m3u.WriteString(baseUrl)

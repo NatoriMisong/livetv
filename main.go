@@ -36,7 +36,9 @@ func main() {
 		log.Panicf("init: %s\n", err)
 	}
 	log.Println("LiveTV starting...")
-	go service.LoadChannelCache()
+	// 取消程序启动时开始的缓存
+	// go service.LoadChannelCache()
+	
 	c := cron.New()
 	_, err = c.AddFunc("0 */4 * * *", service.UpdateURLCache)
 	if err != nil {
