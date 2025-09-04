@@ -48,6 +48,14 @@
               <label for="inputChannelLiveURL">URL</label>
               <input type="text" class="form-control" id="inputChannelLiveURL" name="url">
             </div>
+            <div class="form-group">
+              <label for="inputChannelIcon">Icon</label>
+              <input type="text" class="form-control" id="inputChannelIcon" name="icon" placeholder="Optional channel icon URL">
+            </div>
+            <div class="form-group">
+              <label for="inputChannelEpg">EPG</label>
+              <input type="text" class="form-control" id="inputChannelEpg" name="epg" placeholder="Optional EPG ID">
+            </div>
             <div class="checkbox">
               <label>
                 <input type="checkbox" name="proxy" checked>Proxy stream
@@ -76,6 +84,14 @@
                   <div class="form-group">
                     <label for="editChannelUrl">URL</label>
                     <input type="text" class="form-control" id="editChannelUrl" name="url">
+                  </div>
+                  <div class="form-group">
+                    <label for="editChannelIcon">Icon</label>
+                    <input type="text" class="form-control" id="editChannelIcon" name="icon" placeholder="Optional channel icon URL">
+                  </div>
+                  <div class="form-group">
+                    <label for="editChannelEpg">EPG</label>
+                    <input type="text" class="form-control" id="editChannelEpg" name="epg" placeholder="Optional EPG ID">
                   </div>
                   <div class="checkbox">
                     <label>
@@ -232,10 +248,14 @@
         var name = $(this).data('name');
         var url = $(this).data('url');
         var proxy = $(this).data('proxy');
+        var icon = $(this).data('icon') || '';
+        var epg = $(this).data('epg') || '';
         
         $('#editChannelId').val(id);
         $('#editChannelName').val(name);
         $('#editChannelUrl').val(url);
+        $('#editChannelIcon').val(icon);
+        $('#editChannelEpg').val(epg);
         $('#editChannelProxy').prop('checked', true); // 默认勾选Proxy stream
         
         $('#editChannelModal').modal('show');
@@ -288,6 +308,11 @@
           // 如果序号没有变化，不执行操作
           if (parseInt(originalIndex) === newIndex) return;
           
+          // 获取编辑按钮元素以获取所有频道信息
+          var editButton = movedRow.find('.edit-channel');
+          var movedIcon = editButton.data('icon') || '';
+          var movedEpg = editButton.data('epg') || '';
+          
           // 创建一个隐藏的表单并提交更新
           var form = $('<form>', {
             'method': 'POST',
@@ -316,6 +341,18 @@
             'type': 'hidden',
             'name': 'url',
             'value': movedUrl
+          }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'icon',
+            'value': movedIcon
+          }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'epg',
+            'value': movedEpg
           }));
           
           if (movedProxy) {
