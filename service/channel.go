@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/zjyl1994/livetv/global"
-	"github.com/zjyl1994/livetv/model"
+	"github.com/NatoriMisong/livetv/global"
+	"github.com/NatoriMisong/livetv/model"
 )
 
 func GetAllChannel() (channels []model.Channel, err error) {

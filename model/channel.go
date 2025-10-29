@@ -5,4 +5,6 @@ type Channel struct {
 	Name  string
 	URL   string
 	Proxy bool
+	Icon  string
+	Epg   string
 }

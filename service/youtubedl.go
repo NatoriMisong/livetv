@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/zjyl1994/livetv/global"
+	"github.com/NatoriMisong/livetv/global"
 )
 
 func GetYoutubeLiveM3U8(youtubeURL string) (string, error) {

@@ -11,6 +11,23 @@
       <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
     <![endif]-->
     <link href="/assert/css/index.css" rel="stylesheet">
+    <style>
+      /* 表格单元格垂直居中 */
+      .table td {
+        vertical-align: middle !important;
+      }
+      
+      /* 允许Channel、Live、M3U8字段值被复制 */
+      .table td:nth-child(3), /* Channel */
+      .table td:nth-child(4), /* Live */
+      .table td:nth-child(5)  /* M3U8 */
+      {
+        user-select: text !important;
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
+      }
+    </style>
   </head>
   <body>
     <div class="container">
@@ -31,17 +48,70 @@
               <label for="inputChannelLiveURL">URL</label>
               <input type="text" class="form-control" id="inputChannelLiveURL" name="url">
             </div>
+            <div class="form-group">
+              <label for="inputChannelIcon">Icon</label>
+              <input type="text" class="form-control" id="inputChannelIcon" name="icon" placeholder="Optional channel icon URL">
+            </div>
+            <div class="form-group">
+              <label for="inputChannelEpg">EPG</label>
+              <input type="text" class="form-control" id="inputChannelEpg" name="epg" placeholder="Optional EPG ID">
+            </div>
             <div class="checkbox">
               <label>
-                <input type="checkbox" name="proxy">Proxy stream
+                <input type="checkbox" name="proxy" checked>Proxy stream
               </label>
             </div>
             <button type="submit" class="btn btn-default">Add Channel</button>
           </form>
         </div>
+        
+        <!-- Edit Channel Modal -->
+        <div class="modal fade" id="editChannelModal" tabindex="-1" role="dialog" aria-labelledby="editChannelModalLabel">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="editChannelModalLabel">Edit Channel</h4>
+              </div>
+              <div class="modal-body">
+                <form role="form" action="/api/updatechannel" method="POST">
+                  <input type="hidden" id="editChannelId" name="id">
+
+                  <div class="form-group">
+                    <label for="editChannelName">Name</label>
+                    <input type="text" class="form-control" id="editChannelName" name="name">
+                  </div>
+                  <div class="form-group">
+                    <label for="editChannelUrl">URL</label>
+                    <input type="text" class="form-control" id="editChannelUrl" name="url">
+                  </div>
+                  <div class="form-group">
+                    <label for="editChannelIcon">Icon</label>
+                    <input type="text" class="form-control" id="editChannelIcon" name="icon" placeholder="Optional channel icon URL">
+                  </div>
+                  <div class="form-group">
+                    <label for="editChannelEpg">EPG</label>
+                    <input type="text" class="form-control" id="editChannelEpg" name="epg" placeholder="Optional EPG ID">
+                  </div>
+                  <div class="checkbox">
+                    <label>
+                      <input type="checkbox" id="editChannelProxy" name="proxy" checked>Proxy stream
+                    </label>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        
         <table class="table table-striped table-condensed">
           <tr>
-              <th>#</th>
+              <th>Order</th>
+              <th>Index</th>
               <th>Channel</th>
               <th>Live</th>
               <th>M3U8</th>
@@ -49,16 +119,22 @@
               <th></th>
           </tr>
           {{range .Channels}}
-          <tr>
-              <td>{{.ID}}</td>
+          <tr class="channel-row" {{if ne .ID 0}}draggable="true"{{end}}>
+              <td>
+                {{if ne .ID 0}}
+                <span class="drag-handle">☰</span>
+                {{end}}
+              </td>
+              <td class="channel-id">{{.ID}}</td>
               <td>{{.Name}}</td>
               <td>{{.URL}}</td>
               <td>{{.M3U8}}</td>
               <td>{{ if .Proxy }}<span class="glyphicon glyphicon-ok" aria-hidden="true"></span>{{ end }}</td>
-              <td><a href="/api/delchannel?id={{.ID}}"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></a></td>
+              <td><a href="/api/delchannel?id={{.ID}}"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></a> <a href="#" class="edit-channel" data-id="{{.ID}}" data-name="{{.Name}}" data-url="{{.URL}}" data-proxy="{{.Proxy}}" data-icon="{{.Icon}}" data-epg="{{.Epg}}"><span class="glyphicon glyphicon-pencil" aria-hidden="true"></span></a></td>
           </tr>
           {{end}}
         </table>
+        
       </div>
       <div class="panel panel-danger">
         <div class="panel-heading">
@@ -86,6 +162,12 @@
                   </span>
                 </div>
               </div>
+              <div class="text">
+                <p>
+                  <strong>Info:</strong>
+                  720p: <code>-f ""best[height=720]"" --cookies /root/data/cookies.txt -g {url} </code>
+                </p>
+              </div>
               <div class="form-group">
                 <label for="inputBaseURL">BaseURL</label>
                 <div class="input-group">
@@ -94,6 +176,16 @@
                     <button class="btn btn-default" type="button" id="auto-fill-button">Auto Fill</button>
                   </span>
                 </div>
+              </div>
+              <div class="form-group">
+                <label for="inputSecurityKey">Security Key</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="inputSecurityKey" name="security_key" value="{{.Configs.SecurityKey}}" pattern="^.{12,12}$" maxlength="12">
+                  <span class="input-group-btn">
+                    <button class="btn btn-default" type="button" id="generate-security-key">Generate Random</button>
+                  </span>
+                </div>
+                <p class="help-block">Must be exactly 12 characters. Used to protect access to live streams.</p>
               </div>
               <button type="submit" class="btn btn-default">Save Config</button>
             </form>
@@ -124,7 +216,7 @@
           </div>
       </div>
       <footer class="text-center">
-        <a href="https://github.com/zjyl1994/livetv">LiveTV!</a> by <a href="https://github.com/zjyl1994">zjyl1994</a>.
+        <a href="https://github.com/NatoriMisong/livetv">LiveTV!</a> by <a href="https://github.com/NatoriMisong">zjyl1994</a>.
         Made with <span style="color: #e25555;">&hearts;</span> in Kwangtung.
         <a href="/log">View Log.</a>
         <a href="/api/logout">Logout.</a>
@@ -132,7 +224,153 @@
     </div>
     <script src="/assert/js/jquery.min.js"></script>
     <script src="/assert/js/bootstrap.min.js"></script>
+    <script>
+      // 随机生成12字符安全密钥
+      $(document).ready(function() {
+        $('#generate-security-key').click(function() {
+          var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+          var result = '';
+          for (var i = 0; i < 12; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          $('#inputSecurityKey').val(result);
+        });
+      });
+    </script>
     <script src="/assert/js/bootbox.all.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script>
+    $(document).ready(function() {
+      $('.edit-channel').click(function(e) {
+        e.preventDefault();
+        var id = $(this).data('id');
+        var index = $(this).closest('tr').find('td.channel-id').text();
+        var name = $(this).data('name');
+        var url = $(this).data('url');
+        var proxy = $(this).data('proxy');
+        var icon = $(this).data('icon') || '';
+        var epg = $(this).data('epg') || '';
+        
+        $('#editChannelId').val(id);
+        $('#editChannelName').val(name);
+        $('#editChannelUrl').val(url);
+        $('#editChannelIcon').val(icon);
+        $('#editChannelEpg').val(epg);
+        $('#editChannelProxy').prop('checked', true); // 默认勾选Proxy stream
+        
+        $('#editChannelModal').modal('show');
+      });
+      
+      // 样式调整 - 减小拖拽手柄大小
+      $('.drag-handle').css({
+        'cursor': 'move',
+        'padding': '2px 5px',
+        'display': 'inline-block',
+        'font-size': '14px'
+      });
+      
+      // 添加拖放排序功能
+      var channelTable = $('.table.table-striped');
+      var channelBody = channelTable.find('tbody');
+      
+      // 确保有tbody元素
+      if (channelBody.length === 0) {
+        channelBody = $('<tbody>').appendTo(channelTable);
+        channelTable.find('tr:not(:first)').appendTo(channelBody);
+      }
+      
+      // 初始化jQuery UI sortable
+      channelBody.sortable({
+        handle: '.drag-handle',
+        items: 'tr.channel-row[draggable="true"]',
+        axis: 'y',
+        opacity: 0.8,
+        placeholder: 'bg-warning',
+        start: function(e, ui) {
+          ui.item.addClass('dragging');
+        },
+        stop: function(e, ui) {
+          ui.item.removeClass('dragging');
+          
+          // 获取被拖动的行
+          var movedRow = ui.item;
+          var movedId = movedRow.find('.channel-id').text();
+          var movedName = movedRow.find('td:nth-child(3)').text();
+          var movedUrl = movedRow.find('td:nth-child(4)').text();
+          var movedProxy = movedRow.find('td:nth-child(6)').find('.glyphicon-ok').length > 0;
+          
+          // 计算新的序号位置 - 基于新的排序位置
+          var newIndex = channelBody.find('tr.channel-row[draggable="true"]').index(movedRow) + 1;
+          
+          // 获取原来的序号
+          var originalIndex = movedRow.find('.channel-id').text();
+          
+          // 如果序号没有变化，不执行操作
+          if (parseInt(originalIndex) === newIndex) return;
+          
+          // 获取编辑按钮元素以获取所有频道信息
+          var editButton = movedRow.find('.edit-channel');
+          var movedIcon = editButton.data('icon') || '';
+          var movedEpg = editButton.data('epg') || '';
+          
+          // 创建一个隐藏的表单并提交更新
+          var form = $('<form>', {
+            'method': 'POST',
+            'action': '/api/updatechannel'
+          });
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'id',
+            'value': movedId
+          }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'index',
+            'value': newIndex
+          }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'name',
+            'value': movedName
+          }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'url',
+            'value': movedUrl
+          }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'icon',
+            'value': movedIcon
+          }));
+          
+          form.append($('<input>', {
+            'type': 'hidden',
+            'name': 'epg',
+            'value': movedEpg
+          }));
+          
+          if (movedProxy) {
+            form.append($('<input>', {
+              'type': 'hidden',
+              'name': 'proxy',
+              'value': 'on'
+            }));
+          }
+          
+          // 延迟提交，让用户看到视觉反馈
+          setTimeout(function() {
+            form.appendTo('body').submit();
+          }, 300);
+        }
+      });
+    });
+    </script>
     <script>
       $("#auto-fill-button").click(function(){
           $("#inputBaseURL").val(window.location.protocol + "//" + window.location.host)

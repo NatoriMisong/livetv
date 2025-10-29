@@ -1,16 +1,16 @@
 FROM golang:alpine AS builder
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories && apk update && apk --no-cache add build-base
-WORKDIR /go/src/github.com/zjyl1994/livetv/
+RUN apk update && apk --no-cache add build-base
+WORKDIR /go/src/github.com/NatoriMisong/livetv/
 COPY . . 
-RUN GOPROXY="https://goproxy.io" GO111MODULE=on go build -o livetv .
+RUN GO111MODULE=on CGO_CFLAGS="-D_LARGEFILE64_SOURCE" go build -o livetv .
 
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates youtube-dl tzdata libc6-compat libgcc libstdc++
+RUN apk --no-cache add ca-certificates tzdata libc6-compat libgcc libstdc++ youtube-dl
 WORKDIR /root
-COPY --from=builder /go/src/github.com/zjyl1994/livetv/view ./view
-COPY --from=builder /go/src/github.com/zjyl1994/livetv/assert ./assert
-COPY --from=builder /go/src/github.com/zjyl1994/livetv/.env .
-COPY --from=builder /go/src/github.com/zjyl1994/livetv/livetv .
+COPY --from=builder /go/src/github.com/NatoriMisong/livetv/view ./view
+COPY --from=builder /go/src/github.com/NatoriMisong/livetv/assert ./assert
+COPY --from=builder /go/src/github.com/NatoriMisong/livetv/.env .
+COPY --from=builder /go/src/github.com/NatoriMisong/livetv/livetv .
 EXPOSE 9000
 VOLUME ["/root/data"]
 CMD ["./livetv"]

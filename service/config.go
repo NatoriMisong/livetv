@@ -2,8 +2,8 @@ package service
 
 import (
 	"github.com/jinzhu/gorm"
-	"github.com/zjyl1994/livetv/global"
-	"github.com/zjyl1994/livetv/model"
+	"github.com/NatoriMisong/livetv/global"
+	"github.com/NatoriMisong/livetv/model"
 )
 
 func GetConfig(key string) (string, error) {

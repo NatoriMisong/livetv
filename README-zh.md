@@ -1,19 +1,22 @@
 # LiveTV
-将 Youtube 直播作为 IPTV 电视源
 
-## 安装方法
+将 Youtube 直播作为 IPTV 源
+这个项目分支于[livetv](https://github.com/NatoriMisong/livetv)
 
-首先你需要安裝Docker，Centos7用家可以直接使用參考這篇教學文檔：[How To Install and Use Docker on CentOS 7](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-on-centos-7)
+感谢 @zjyl1994
 
-安裝好Docker后，只需要使用以下命令即可在本地的9500連接埠啓用LiveTV!
 
-`docker run -d -p9500:9000 zjyl1994/livetv:1.0`
+## 构建
 
-資料檔存儲于容器内的 `/root/data` 目錄中，所以建議使用-v指令將這個目錄映射到宿主機的目錄。
+首先你需要安装Docker
 
-一個使用外部儲存目錄的例子如下。
+clone 本存储库，执行
+`docker build -t livetv .`
 
-`docker run -d -p9500:9000 -v/mnt/data/livetv:/root/data zjyl1994/livetv:1.1`
+构建好容器镜像后，只需要使用以下命令即可在本地的9500端口访问LiveTV!
+
+`docker run -d -p 9500:9000 -v /mnt/data/livetv:/root/data zjyl1994/livetv:1.1`
+
 
 這將在 9500 連接埠開啓一個使用 `/mnt/data/livetv` 目錄作爲存儲的 LiveTV！ 容器。
 
@@ -34,3 +37,9 @@ PS: 如果不指定外部存儲目錄，LiveTV！重新啓動時將無法讀取�
 當你使用Kodi之類的播放器，可以考慮使用第一行的M3U檔案URL進行播放，會自動生成包含所有頻道信息的播放列表。
 
 Youtube-dl的文檔可以在這裏找到 => [https://github.com/ytdl-org/youtube-dl](https://github.com/ytdl-org/youtube-dl)
+
+
+
+当你不能直接链接Youtube时，你需要首先有一个飞机。具体怎么弄自己查，此处假定你的飞机地址为 socks5://192.168.1.1:10808。
+
+运行 docker run -p9500:9000 -eHTTP_PROXY=socks5://192.168.1.1:10808 -eHTTPS_PROXY=socks5://192.168.1.1:10808 -v/mnt/d/workspace/livetv/data:/root/data zjyl1994/livetv:1.0

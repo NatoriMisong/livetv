@@ -4,10 +4,10 @@ import (
 	"bufio"
 	"strings"
 
-	"github.com/zjyl1994/livetv/util"
+	"github.com/NatoriMisong/livetv/util"
 )
 
-func M3U8Process(data string, prefixURL string) string {
+func M3U8Process(data string, prefixURL string, securityKey string) string {
 	var sb strings.Builder
 	scanner := bufio.NewScanner(strings.NewReader(data))
 	for scanner.Scan() {
@@ -16,6 +16,9 @@ func M3U8Process(data string, prefixURL string) string {
 			sb.WriteString(l)
 		} else {
 			sb.WriteString(prefixURL)
+			sb.WriteString("k=")
+			sb.WriteString(securityKey)
+			sb.WriteString("&url=")
 			sb.WriteString(util.CompressString(l))
 		}
 		sb.WriteString("\n")

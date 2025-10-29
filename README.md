@@ -36,3 +36,6 @@ When you use Kodi or similar player, you can consider using the M3U file URL in 
 Youtube-dl document here => [https://github.com/ytdl-org/youtube-dl](https://github.com/ytdl-org/youtube-dl)
 
 Document Translate by [DeepL](https://www.deepl.com/zh/translator)
+
+
+ docker stop livetv && docker rm livetv && docker run -d -p 9500:9000 --restart=always --name livetv -v /opt/livetv:/root/data -eHTTP_PROXY=socks5://10.1.1.4:1080 -eHTTPS_PROXY=socks5://10.1.1.4:1080 livetv:0.0.1 && docker logs -f livetv

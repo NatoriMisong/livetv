@@ -6,10 +6,13 @@ type Channel struct {
 	URL   string
 	M3U8  string
 	Proxy bool
+	Icon  string
+	Epg   string
 }
 
 type Config struct {
-	BaseURL string
-	Cmd     string
-	Args    string
+	BaseURL     string
+	Cmd         string
+	Args        string
+	SecurityKey string
 }

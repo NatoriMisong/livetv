@@ -8,17 +8,19 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
+	"github.com/NatoriMisong/livetv/util"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/robfig/cron/v3"
-	"github.com/zjyl1994/livetv/global"
-	"github.com/zjyl1994/livetv/route"
-	"github.com/zjyl1994/livetv/service"
+	"github.com/NatoriMisong/livetv/global"
+	"github.com/NatoriMisong/livetv/route"
+	"github.com/NatoriMisong/livetv/service"
 )
 
 func main() {
@@ -36,9 +38,30 @@ func main() {
 		log.Panicf("init: %s\n", err)
 	}
 	log.Println("LiveTV starting...")
-	go service.LoadChannelCache()
+	// 取消程序启动时开始的缓存
+	// go service.LoadChannelCache()
+	
+	// 初始化默认配置项
+	// 检查并设置 base_url
+	if _, err := service.GetConfig("base_url"); err != nil {
+		defaultBaseURL := "http://localhost:8080"
+		listenAddr := os.Getenv("LIVETV_LISTEN")
+		if listenAddr != "" {
+			defaultBaseURL = "http://localhost:" + strings.Split(listenAddr, ":")[len(strings.Split(listenAddr, ":"))-1]
+		}
+		service.SetConfig("base_url", defaultBaseURL)
+		log.Println("Set default base_url:", defaultBaseURL)
+	}
+	
+	// 检查并设置 security_key
+	if _, err := service.GetConfig("security_key"); err != nil {
+		defaultSecurityKey := util.RandString(12)
+		service.SetConfig("security_key", defaultSecurityKey)
+		log.Println("Set default security_key:", defaultSecurityKey)
+	}
+	
 	c := cron.New()
-	_, err = c.AddFunc("0 */4 * * *", service.UpdateURLCache)
+	_, err = c.AddFunc("10 8 * * *", service.UpdateURLCache)
 	if err != nil {
 		log.Panicf("preloadCron: %s\n", err)
 	}
